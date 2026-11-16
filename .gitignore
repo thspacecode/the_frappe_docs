@@ -56,9 +56,11 @@ jspm_packages/
 
 # Generated SPA assets
 /the_frappe_docs/public/frontend/
-/the_frappe_docs/www/docs.html
 /the_frappe_docs/public/node_modules
 
 /frontend/.build/
 /frontend/.react-router/
 /frontend/.content/
+
+/the_frappe_docs/private_build/
+/the_frappe_docs/private_build.next/

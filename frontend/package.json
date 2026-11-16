@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/prepare-content.mjs && react-router dev",
-    "build": "node scripts/prepare-content.mjs && react-router build && node scripts/export-frappe.mjs",
+    "build": "node scripts/build-sources.mjs",
     "typecheck": "node scripts/prepare-content.mjs && react-router typegen && tsc",
     "lint": "eslint app scripts *.ts --ext .ts,.tsx,.mjs",
     "test": "node scripts/check-build.mjs"
