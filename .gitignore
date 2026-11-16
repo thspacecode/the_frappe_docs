@@ -53,3 +53,8 @@ jspm_packages/
 
 # Aider AI Chat
 .aider*
+
+# Generated SPA assets
+/the_frappe_docs/public/frontend/
+/the_frappe_docs/www/docs.html
+/the_frappe_docs/public/node_modules
