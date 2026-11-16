@@ -47,11 +47,21 @@ class TestSourceAccess(unittest.TestCase):
 						patch.object(
 							frappe,
 							"local",
-							frappe._dict(request=frappe._dict(path=f"/docs/source/bmu_core/guide{suffix}")),
+							frappe._dict(
+								request=frappe._dict(
+									path=f"/docs/source/bmu_core/guide{suffix}",
+									query_string=b"scope=guide&x=1",
+								)
+							),
 						),
 					):
 						response = sources.DocsSourceRenderer("docs").render()
-						self.assertEqual(response.status_code, 403)
+						self.assertEqual(response.status_code, 403 if suffix else 302)
+						if not suffix:
+							self.assertEqual(
+								response.headers["Location"],
+								"/login?redirect-to=%2Fdocs%2Fsource%2Fbmu_core%2Fguide%3Fscope%3Dguide%26x%3D1",
+							)
 						self.assertNotIn(b"private", response.data)
 						self.assertEqual(response.headers["Cache-Control"], "private, no-store")
 				with (

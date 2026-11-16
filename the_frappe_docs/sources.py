@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from urllib.parse import urlencode
 
 import frappe
 from frappe.website.page_renderers.base_renderer import BaseRenderer
@@ -81,11 +82,19 @@ class DocsSourceRenderer(BaseRenderer):
 		)
 		if not source:
 			return self.respond("Source not found", 404)
+		remainder = parts[5] if len(parts) == 6 else ""
 		if not can_access_source(source):
+			if frappe.session.user == "Guest" and not remainder.startswith("assets/"):
+				request = frappe.local.request
+				target = request.path
+				if request.query_string:
+					target += "?" + request.query_string.decode("utf-8")
+				response = self.respond("", 302)
+				response.headers["Location"] = "/login?" + urlencode({"redirect-to": target})
+				return response
 			return self.respond("Login required", 403)
 		if not is_built(source):
 			return self.respond("Documentation needs a build", 503)
-		remainder = parts[5] if len(parts) == 6 else ""
 		if remainder.startswith("assets/"):
 			path = resolve_build_file(source, remainder)
 			if path is None:
