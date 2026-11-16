@@ -281,3 +281,14 @@ app_license = "mit"
 
 
 website_route_rules = [{"from_route": "/docs/<path:app_path>", "to_route": "docs"}]
+
+page_renderer = ["the_frappe_docs.sources.DocsSourceRenderer"]
+
+the_frappe_docs_sources = [
+	{
+		"slug": "the-docs",
+		"title": "The Docs",
+		"path": "frontend/vendor/the-docs/docs",
+		"allow_guest": True,
+	}
+]
