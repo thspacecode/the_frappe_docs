@@ -1,0 +1,3 @@
+import { defineConfig } from "@the-docs/preset-default";
+
+export default defineConfig({ contentRoot: new URL("./.content", import.meta.url) });

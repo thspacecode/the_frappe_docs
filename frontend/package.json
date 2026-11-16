@@ -4,21 +4,36 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "lint": "eslint src --ext .js,.jsx && eslint vite.config.js"
+    "dev": "node scripts/prepare-content.mjs && react-router dev",
+    "build": "node scripts/prepare-content.mjs && react-router build && node scripts/export-frappe.mjs",
+    "typecheck": "node scripts/prepare-content.mjs && react-router typegen && tsc",
+    "lint": "eslint app scripts *.ts --ext .ts,.tsx,.mjs",
+    "test": "node scripts/check-build.mjs"
   },
   "dependencies": {
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "react-router-dom": "^7.18.5"
+    "@react-router/node": "7.18.5",
+    "@the-docs/preset-default": "0.0.1-alpha.4",
+    "clsx": "^2.1.1",
+    "isbot": "^5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router": "7.18.5"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^6.3.0",
+    "@react-router/dev": "7.18.5",
+    "@types/node": "^24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
     "eslint": "^8.57.1",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "globals": "^17.14.0",
-    "vite": "^8.3.8"
+    "eslint-plugin-react": "^7",
+    "eslint-plugin-react-hooks": "^7",
+    "typescript": "^6",
+    "vite": "8.3.8"
+  },
+  "overrides": {
+    "react-router": "$react-router",
+    "@react-router/dev": "$@react-router/dev"
   }
 }
