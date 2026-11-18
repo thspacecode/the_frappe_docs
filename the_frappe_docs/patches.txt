@@ -7,3 +7,5 @@
 the_frappe_docs.patches.v0_0.remove_docs_selector
 
 the_frappe_docs.patches.v0_0.remove_the_docs_source
+
+the_frappe_docs.patches.v0_0.use_generic_docs_viewer

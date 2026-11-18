@@ -15,15 +15,15 @@
    "indent": 0,
    "is_default_module": 0,
    "keep_closed": 0,
-   "label": "BMU Core",
-   "link_to": "docs-bmu-core",
+   "label": "Documentation",
+   "link_to": "docs-viewer",
    "link_type": "Page",
    "open_in_new_tab": 0,
    "show_arrow": 0,
    "type": "Link"
   }
  ],
- "modified": "2026-11-18 13:58:28.529124",
+ "modified": "2026-11-18 14:59:04.355797",
  "modified_by": "Administrator",
  "module": "The Frappe Docs",
  "name": "The Frappe Docs",

@@ -15,7 +15,7 @@ add_to_apps_screen = [
 		"name": app_name,
 		"logo": "/assets/the_frappe_docs/images/docs.svg",
 		"title": "Docs",
-		"route": "/desk/docs-bmu-core",
+		"route": "/desk/docs-viewer",
 		"sequence_id": 20,
 	}
 ]
@@ -285,3 +285,5 @@ page_renderer = ["the_frappe_docs.sources.DocsSourceRenderer"]
 before_install = "the_frappe_docs.sources.validate_install_sources"
 before_app_install = "the_frappe_docs.sources.validate_install_sources"
 before_migrate = "the_frappe_docs.sources.get_site_sources"
+
+boot_session = "the_frappe_docs.boot.boot_session"
