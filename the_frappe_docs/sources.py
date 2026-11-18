@@ -53,7 +53,8 @@ def get_sources():
 			app=source["app"],
 			slug=source["slug"],
 			title=source["title"],
-			url=f"/docs/{source['slug']}",
+			desk_url=f"/desk/the-frappe-docs/docs-viewer/{source['slug']}",
+			asset_base=f"/docs-assets/{source['slug']}",
 		)
 		for source in get_site_sources()
 		if can_access_source(source) and is_built(source)
@@ -62,16 +63,19 @@ def get_sources():
 
 def resolve_build_file(source, relative_path):
 	"""Reject traversal and symlinks before returning a protected build file."""
-	root = (get_build_directory(source) / "client").resolve()
-	path = (root / relative_path).resolve()
-	if not path.is_relative_to(root) or not path.is_file():
+	root = get_build_directory(source) / "client"
+	candidate = root / relative_path
+	path = candidate.resolve()
+	if not path.is_relative_to(root.resolve()) or not path.is_file():
+		return None
+	if any(part.is_symlink() for part in (candidate, *candidate.parents)):
 		return None
 	return path
 
 
 class DocsSourceRenderer(BaseRenderer):
 	def can_render(self):
-		return frappe.local.request.path.startswith("/docs/")
+		return frappe.local.request.path.startswith(("/docs/", "/docs-assets/"))
 
 	def render(self):
 		import mimetypes
@@ -81,7 +85,7 @@ class DocsSourceRenderer(BaseRenderer):
 		slug = parts[2]
 		remainder = parts[3] if len(parts) == 4 else ""
 		legacy_app = None
-		if slug == "source":
+		if parts[1] == "docs" and slug == "source":
 			legacy = remainder.split("/", 2)
 			if len(legacy) < 2:
 				return self.respond("Source not found", 404)
@@ -90,35 +94,28 @@ class DocsSourceRenderer(BaseRenderer):
 		source = next((source for source in get_site_sources() if source["slug"] == slug), None)
 		if not source or (legacy_app and source["app"] != legacy_app):
 			return self.respond("Source not found", 404)
-		if legacy_app:
-			target = f"/docs/{slug}"
-			if remainder:
-				target += "/" + remainder
+		assets = request.path.startswith("/docs-assets/")
+		if not assets:
+			if remainder.startswith("assets/"):
+				return self.respond("Asset endpoint retired", 404)
+			target = f"/desk/the-frappe-docs/docs-viewer/{slug}"
+			route = "/" + remainder
 			if request.query_string:
-				target += "?" + request.query_string.decode("utf-8")
+				route += "?" + request.query_string.decode("utf-8")
+			if route != "/":
+				target += "?" + urlencode({"doc": route})
 			response = self.respond("", 301)
 			response.headers["Location"] = target
 			return response
 		if not can_access_source(source):
-			if frappe.session.user == "Guest" and not remainder.startswith("assets/"):
-				request = frappe.local.request
-				target = request.path
-				if request.query_string:
-					target += "?" + request.query_string.decode("utf-8")
-				response = self.respond("", 302)
-				response.headers["Location"] = "/login?" + urlencode({"redirect-to": target})
-				return response
 			return self.respond("Login required", 403)
 		if not is_built(source):
 			return self.respond("Documentation needs a build", 503)
-		if remainder.startswith("assets/"):
-			path = resolve_build_file(source, remainder)
-			if path is None:
-				return self.respond("Asset not found", 404)
-		else:
-			path = resolve_build_file(source, "index.html")
-			if path is None:
-				return self.respond("Documentation needs a build", 503)
+		if not remainder.startswith("assets/"):
+			return self.respond("Asset not found", 404)
+		path = resolve_build_file(source, remainder)
+		if path is None or path.suffix.lower() in (".html", ".htm"):
+			return self.respond("Asset not found", 404)
 		mimetype = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
 		return self.respond(path.read_bytes(), 200, mimetype)
 

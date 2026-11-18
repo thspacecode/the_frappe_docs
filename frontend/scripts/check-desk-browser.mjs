@@ -39,7 +39,12 @@ export default async function checkDeskBrowser(page) {
   await page
     .getByRole("heading", { name: "Setting Up", exact: true })
     .waitFor();
-  if (page.url() !== desk) throw new Error("React changed the Desk URL");
+  if (
+    (await page.evaluate(() =>
+      new URL(location.href).searchParams.get("doc")
+    )) !== "/p/setting-up"
+  )
+    throw new Error("Search did not save the document route");
   // Inject plain anchors to exercise Markdown-style links without editing source content.
   await page.evaluate(() => {
     const link = document.createElement("a");
@@ -57,9 +62,35 @@ export default async function checkDeskBrowser(page) {
     .getByRole("heading", { name: "Hello World", exact: true })
     .first()
     .waitFor();
-  if (page.url() !== desk) throw new Error("Markdown link left Desk");
+  const documentUrl = page.url();
+  const documentRoute = await page.evaluate(() => ({
+    path: new URL(location.href).searchParams.get("doc"),
+    hash: location.hash,
+  }));
+  if (
+    documentRoute.path !== "/p/hello-world?scope=team" ||
+    documentRoute.hash !== "#hello-world"
+  )
+    throw new Error("Document query or heading was lost");
+  await page.reload();
+  await page
+    .getByRole("heading", { name: "Hello World", exact: true })
+    .first()
+    .waitFor();
+  if (page.url() !== documentUrl)
+    throw new Error("Refresh lost the document URL");
 
   await page.getByRole("link", { name: "List", exact: true }).click();
+  await page
+    .getByRole("heading", { name: "Filter documents", exact: true })
+    .waitFor();
+  await page.goBack();
+  await page
+    .getByRole("heading", { name: "Hello World", exact: true })
+    .first()
+    .waitFor();
+  if (page.url() !== documentUrl) throw new Error("Back lost the document URL");
+  await page.goForward();
   await page
     .getByRole("heading", { name: "Filter documents", exact: true })
     .waitFor();

@@ -86,7 +86,7 @@ export default defineConfig({
       ],
     },
   },
-  base: `${process.env.THE_DOCS_SOURCE_BASE || "/docs/bmu-core"}/assets/desk/`,
+  base: `${process.env.THE_DOCS_SOURCE_BASE || "/docs-assets/bmu-core"}/assets/desk/`,
   build: {
     outDir: ".desk-build",
     lib: {

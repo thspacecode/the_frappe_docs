@@ -24,15 +24,17 @@ for (const owner of readdirSync(output)) {
       !/(^|[},])\s*:root\s*[{,]/m.test(styles),
       "Root styles must stay in Shadow DOM"
     );
-    const page = readFileSync(new URL("index.html", client), "utf8");
-    const base = `/docs/${slug}`;
-    assert.ok(page.includes(`"basename":"${base}"`));
-    const assets = [...page.matchAll(/(?:src|href)="([^"?#]+)"/g)]
-      .map((match) => match[1])
-      .filter((url) => url.startsWith(`${base}/assets/`));
-    assert.ok(assets.length > 0);
-    for (const url of assets) {
-      const asset = url.slice(base.length + 1);
+    assert.ok(
+      !existsSync(new URL("index.html", client)),
+      "No standalone shell"
+    );
+    assert.ok(!desk.includes(`/docs/${slug}/assets/`));
+    for (const match of styles.matchAll(/url\(["']?([^)'" ]+)/g)) {
+      const url = match[1];
+      if (url.startsWith("data:")) continue;
+      const asset = url.startsWith(`/docs-assets/${slug}/`)
+        ? url.slice(`/docs-assets/${slug}/`.length)
+        : `assets/desk/${url}`;
       assert.ok(existsSync(new URL(asset, client)), `Missing asset: ${asset}`);
     }
   }

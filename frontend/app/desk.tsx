@@ -13,7 +13,7 @@ import {
 import Document, { loader, ErrorBoundary } from "@the-docs/core/route";
 import Scope, { clientLoader } from "./routes/scope";
 import { DeskBoundary } from "./desk-boundary";
-import { resolveDeskLink } from "./desk-links";
+import { deskRoute, deskUrl, resolveDeskLink } from "./desk-links";
 import "./styles.css";
 
 export function mount(host: HTMLElement, sourceBase: string) {
@@ -23,45 +23,49 @@ export function mount(host: HTMLElement, sourceBase: string) {
   const portals = document.createElement("div");
   portals.className = "desk-docs-portals";
   shadow.append(content, portals);
-  const router = createMemoryRouter([
-    {
-      path: "/",
-      element: (
-        <HomePage
-          documents={getDocuments()}
-          scopes={getScopes()}
-          tags={getTags()}
-          description="Architecture notes and guides for The Docs."
-        />
-      ),
-    },
-    {
-      path: "/list",
-      element: (
-        <DocumentListPage
-          documents={getDocuments()}
-          tags={getTags()}
-          types={getTypes()}
-        />
-      ),
-    },
-    {
-      path: "/tags/tree",
-      element: (
-        <TagsPage documents={getDocuments()} tags={getTags()} view="tree" />
-      ),
-    },
-    {
-      path: "/tags/graph",
-      element: (
-        <TagsPage documents={getDocuments()} tags={getTags()} view="graph" />
-      ),
-    },
-    { path: "/scopes", element: <ScopesPage scopes={getScopes()} /> },
-    { path: "/scopes/:scopeSlug", Component: Scope, loader: clientLoader },
-    { path: "/p/:slug", Component: Document, loader, ErrorBoundary },
-    { path: "/docs/p/:slug", Component: Document, loader, ErrorBoundary },
-  ]);
+  const initialRoute = deskRoute(new URL(location.href));
+  const router = createMemoryRouter(
+    [
+      {
+        path: "/",
+        element: (
+          <HomePage
+            documents={getDocuments()}
+            scopes={getScopes()}
+            tags={getTags()}
+            description="Architecture notes and guides for The Docs."
+          />
+        ),
+      },
+      {
+        path: "/list",
+        element: (
+          <DocumentListPage
+            documents={getDocuments()}
+            tags={getTags()}
+            types={getTypes()}
+          />
+        ),
+      },
+      {
+        path: "/tags/tree",
+        element: (
+          <TagsPage documents={getDocuments()} tags={getTags()} view="tree" />
+        ),
+      },
+      {
+        path: "/tags/graph",
+        element: (
+          <TagsPage documents={getDocuments()} tags={getTags()} view="graph" />
+        ),
+      },
+      { path: "/scopes", element: <ScopesPage scopes={getScopes()} /> },
+      { path: "/scopes/:scopeSlug", Component: Scope, loader: clientLoader },
+      { path: "/p/:slug", Component: Document, loader, ErrorBoundary },
+      { path: "/docs/p/:slug", Component: Document, loader, ErrorBoundary },
+    ],
+    { initialEntries: [initialRoute] },
+  );
   const root = createRoot(content);
   const onAnchor = (event: Event) => {
     if (!(event instanceof MouseEvent)) return;
@@ -83,7 +87,7 @@ export function mount(host: HTMLElement, sourceBase: string) {
       location.origin,
     );
     if (!target) return;
-    // Set a real standalone URL for new tabs, modified clicks, and copied links.
+    // Use Desk URLs for new tabs and copied links.
     link.href = target.url;
     if (
       event.type !== "click" ||
@@ -99,27 +103,59 @@ export function mount(host: HTMLElement, sourceBase: string) {
       return;
     event.preventDefault();
     event.stopPropagation();
-    void router.navigate(target.route).then(() => {
-      const hash = new URL(target.url).hash.slice(1);
-      if (!hash) return;
-      let id = hash;
-      try {
-        id = decodeURIComponent(hash);
-      } catch {
-        /* Keep an invalid escape literal. */
-      }
-      requestAnimationFrame(() => shadow.getElementById(id)?.scrollIntoView());
-    });
+    scrolledRoute = "";
+    void router.navigate(target.route);
   };
   for (const type of ["click", "auxclick", "contextmenu"]) {
     shadow.addEventListener(type, onAnchor, true);
   }
+  let lastRoute = initialRoute;
+  let scrolledRoute = "";
+  const scrollToHeading = () => {
+    if (scrolledRoute === lastRoute) return;
+    const hash = router.state.location.hash.slice(1);
+    if (!hash) return;
+    let id = hash;
+    try {
+      id = decodeURIComponent(hash);
+    } catch {
+      /* Use the literal ID. */
+    }
+    requestAnimationFrame(() => {
+      const heading = shadow.getElementById(id);
+      if (heading) {
+        heading.scrollIntoView();
+        scrolledRoute = lastRoute;
+      }
+    });
+  };
+  const unsubscribe = router.subscribe((state) => {
+    const route =
+      state.location.pathname + state.location.search + state.location.hash;
+    if (route !== lastRoute) {
+      lastRoute = route;
+      scrolledRoute = "";
+      const url = deskUrl(sourceBase, route, location.origin);
+      if (url.href !== location.href) history.pushState(history.state, "", url);
+    }
+    if (state.navigation.state === "idle") scrollToHeading();
+  });
+  const onPopState = () => {
+    if (location.pathname === new URL(sourceBase, location.origin).pathname)
+      void router.navigate(deskRoute(new URL(location.href)));
+  };
+  window.addEventListener("popstate", onPopState);
+  const headings = new MutationObserver(scrollToHeading);
+  headings.observe(content, { childList: true, subtree: true });
   root.render(
     <DeskBoundary.Provider value={shadow}>
       <RouterProvider router={router} />
     </DeskBoundary.Provider>,
   );
   return () => {
+    headings.disconnect();
+    unsubscribe();
+    window.removeEventListener("popstate", onPopState);
     root.unmount();
     router.dispose();
     for (const type of ["click", "auxclick", "contextmenu"]) {

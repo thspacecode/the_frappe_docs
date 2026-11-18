@@ -63,9 +63,7 @@ the_frappe_docs.make_viewer = function (wrapper) {
 				for (const source of sources) {
 					const row = document.createElement("li");
 					const link = document.createElement("a");
-					link.href = `/desk/the-frappe-docs/docs-viewer/${encodeURIComponent(
-						source.slug
-					)}`;
+					link.href = source.desk_url;
 					link.textContent = source.title;
 					row.append(link);
 					list.append(row);
@@ -94,7 +92,7 @@ the_frappe_docs.make_viewer = function (wrapper) {
 			const shadow = host.attachShadow({ mode: "open" });
 			const stylesheet = document.createElement("link");
 			stylesheet.rel = "stylesheet";
-			stylesheet.href = `${source.url}/assets/desk/desk.css`;
+			stylesheet.href = `${source.asset_base}/assets/desk/desk.css`;
 			const styled = new Promise((resolve, reject) => {
 				stylesheet.onload = resolve;
 				stylesheet.onerror = reject;
@@ -102,11 +100,11 @@ the_frappe_docs.make_viewer = function (wrapper) {
 			shadow.append(stylesheet);
 			container.append(host);
 			const [frontend] = await Promise.all([
-				import(`${source.url}/assets/desk/desk.js`),
+				import(`${source.asset_base}/assets/desk/desk.js`),
 				styled,
 			]);
 			if (generation !== load_generation) return;
-			unmount = frontend.mount(host, source.url);
+			unmount = frontend.mount(host, source.desk_url);
 			status.remove();
 			container.setAttribute("aria-busy", "false");
 		} catch {

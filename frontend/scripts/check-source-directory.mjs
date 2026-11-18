@@ -9,8 +9,18 @@ export default async function checkSourceDirectory(page) {
       route.fulfill({
         json: {
           message: [
-            { slug: "guide-one", title: "Guide One", url: "/docs/guide-one" },
-            { slug: "guide-two", title: "Guide Two", url: "/docs/guide-two" },
+            {
+              slug: "guide-one",
+              title: "Guide One",
+              desk_url: "/desk/the-frappe-docs/docs-viewer/guide-one",
+              asset_base: "/docs-assets/guide-one",
+            },
+            {
+              slug: "guide-two",
+              title: "Guide Two",
+              desk_url: "/desk/the-frappe-docs/docs-viewer/guide-two",
+              asset_base: "/docs-assets/guide-two",
+            },
           ],
         },
       })
