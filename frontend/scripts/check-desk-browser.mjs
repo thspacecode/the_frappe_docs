@@ -1,7 +1,7 @@
 // Pass this function to playwright-cli run-code after signing in.
 export default async function checkDeskBrowser(page) {
   const desk = await page.evaluate(
-    () => `${location.origin}/desk/the-frappe-docs/docs-bmu-core`
+    () => `${location.origin}/desk/the-frappe-docs/docs-viewer/bmu-core`
   );
   await page.goto(desk);
   await page.getByRole("heading", { name: "The Docs", exact: true }).waitFor();
@@ -70,6 +70,6 @@ export default async function checkDeskBrowser(page) {
         .querySelector(".desk-docs-host")
         .shadowRoot.querySelector(".desk-docs-body")
   );
-  await page.evaluate(() => window.frappe.set_route("docs-bmu-core"));
+  await page.evaluate(() => window.frappe.set_route("docs-viewer", "bmu-core"));
   await page.getByRole("heading", { name: "The Docs", exact: true }).waitFor();
 }

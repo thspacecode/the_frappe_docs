@@ -1,6 +1,6 @@
 frappe.provide("the_frappe_docs");
 
-the_frappe_docs.make_viewer = function (wrapper, slug) {
+the_frappe_docs.make_viewer = function (wrapper) {
 	const page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: __("Documentation"),
@@ -20,6 +20,7 @@ the_frappe_docs.make_viewer = function (wrapper, slug) {
 	wrapper.load_sources = async function () {
 		wrapper.unload_sources();
 		const generation = load_generation;
+		const slug = frappe.get_route()[1];
 		container.replaceChildren();
 		container.classList.add("desk-docs-embedded");
 		wrapper.classList.add("desk-docs-fullscreen");
@@ -48,6 +49,30 @@ the_frappe_docs.make_viewer = function (wrapper, slug) {
 			});
 			if (generation !== load_generation) return;
 			const sources = response.message || [];
+			if (!slug) {
+				container.replaceChildren();
+				container.classList.remove("desk-docs-embedded");
+				wrapper.classList.remove("desk-docs-fullscreen");
+				container.setAttribute("aria-busy", "false");
+				if (!sources.length) {
+					container.textContent = __(
+						"No documentation sources are available for your account."
+					);
+				}
+				const list = document.createElement("ul");
+				for (const source of sources) {
+					const row = document.createElement("li");
+					const link = document.createElement("a");
+					link.href = `/desk/the-frappe-docs/docs-viewer/${encodeURIComponent(
+						source.slug
+					)}`;
+					link.textContent = source.title;
+					row.append(link);
+					list.append(row);
+				}
+				container.append(list);
+				return;
+			}
 			const source = sources.find((entry) => entry.slug === slug);
 			if (!source) {
 				show_error(__("This documentation source is not available for your account."));
@@ -56,6 +81,14 @@ the_frappe_docs.make_viewer = function (wrapper, slug) {
 			page.set_title(source.title);
 			container.classList.add("desk-docs-embedded");
 			wrapper.classList.add("desk-docs-fullscreen");
+			const navigation = document.createElement("nav");
+			navigation.className = "desk-docs-source-navigation";
+			navigation.setAttribute("aria-label", __("Documentation sources"));
+			const back = document.createElement("a");
+			back.href = "/desk/the-frappe-docs/docs-viewer";
+			back.textContent = __("All documentation sources");
+			navigation.append(back);
+			container.prepend(navigation);
 			const host = document.createElement("div");
 			host.className = "desk-docs-host";
 			const shadow = host.attachShadow({ mode: "open" });

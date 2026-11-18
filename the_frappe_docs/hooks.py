@@ -15,7 +15,7 @@ add_to_apps_screen = [
 		"name": app_name,
 		"logo": "/assets/the_frappe_docs/images/docs.svg",
 		"title": "Docs",
-		"route": "/desk/docs-bmu-core",
+		"route": "/desk/docs-viewer",
 		"sequence_id": 20,
 	}
 ]
