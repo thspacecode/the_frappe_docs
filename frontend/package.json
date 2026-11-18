@@ -8,10 +8,16 @@
     "build": "node scripts/build-sources.mjs",
     "typecheck": "node scripts/prepare-content.mjs && react-router typegen && tsc",
     "lint": "eslint app scripts *.ts --ext .ts,.tsx,.mjs",
-    "test": "node --experimental-strip-types --test scripts/test-desk-links.mjs && node scripts/check-build.mjs"
+    "test": "node --experimental-strip-types --test scripts/test-desk-links.mjs scripts/test-source-components.mjs && node scripts/check-build.mjs"
   },
   "dependencies": {
     "@react-router/node": "7.18.5",
+    "@the-docs/core": "0.0.1-alpha.7",
+    "@the-docs/plugin-bpmn": "0.0.1-alpha.7",
+    "@the-docs/plugin-data-table": "0.0.1-alpha.7",
+    "@the-docs/plugin-excalidraw": "0.0.1-alpha.7",
+    "@the-docs/plugin-mermaid": "0.0.1-alpha.7",
+    "@the-docs/plugin-syntax-highlighter": "0.0.1-alpha.7",
     "@the-docs/preset-default": "0.0.1-alpha.4",
     "clsx": "^2.1.1",
     "isbot": "^5",
@@ -21,6 +27,7 @@
   },
   "devDependencies": {
     "@react-router/dev": "7.18.5",
+    "@types/mdx": "^2.0.14",
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
