@@ -10,6 +10,20 @@ assert.ok(
 for (const owner of readdirSync(output)) {
   for (const slug of readdirSync(new URL(`${owner}/`, output))) {
     const client = new URL(`${owner}/${slug}/client/`, output);
+    const desk = readFileSync(new URL("assets/desk/desk.js", client), "utf8");
+    assert.match(desk, /mount/);
+    const styles = readFileSync(
+      new URL("assets/desk/desk.css", client),
+      "utf8"
+    );
+    assert.ok(
+      styles.includes(":host"),
+      "Desk styles must target the shadow host"
+    );
+    assert.ok(
+      !/(^|[},])\s*:root\s*[{,]/m.test(styles),
+      "Root styles must stay in Shadow DOM"
+    );
     const page = readFileSync(new URL("index.html", client), "utf8");
     const base = `/docs/${slug}`;
     assert.ok(page.includes(`"basename":"${base}"`));

@@ -42,6 +42,20 @@ for (const source of sources) {
     new URL("client/", target),
     { recursive: true }
   );
+  execFileSync(
+    "npx",
+    ["--no-install", "vite", "build", "--config", "desk.vite.config.ts"],
+    {
+      cwd: frontend,
+      stdio: "inherit",
+      env: { ...process.env, THE_DOCS_SOURCE_BASE: base },
+    }
+  );
+  cpSync(
+    new URL("../.desk-build/", import.meta.url),
+    new URL("client/assets/desk/", target),
+    { recursive: true }
+  );
   writeFileSync(
     new URL("source.json", target),
     JSON.stringify({ app: source.app, slug: source.slug, path: source.path })

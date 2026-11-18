@@ -34,6 +34,9 @@ class TestSourceAccess(unittest.TestCase):
 			(root / "client/assets").mkdir(parents=True)
 			(root / "client/index.html").write_text("private document")
 			(root / "client/assets/search.js").write_text("private search data")
+			(root / "client/assets/desk").mkdir()
+			(root / "client/assets/desk/desk.js").write_text("private React mount")
+			(root / "client/assets/desk/desk.css").write_text("private styles")
 			(root / "source.json").write_text(json.dumps(source))
 			with (
 				patch.object(sources, "get_site_sources", return_value=[source]),
@@ -41,7 +44,7 @@ class TestSourceAccess(unittest.TestCase):
 				patch.object(frappe, "get_installed_apps", return_value=["bmu_core"]),
 				patch.object(frappe, "session", frappe._dict(user="Guest")),
 			):
-				for suffix in ("", "/assets/search.js"):
+				for suffix in ("", "/assets/search.js", "/assets/desk/desk.js", "/assets/desk/desk.css"):
 					with (
 						self.subTest(suffix=suffix),
 						patch.object(
@@ -73,6 +76,10 @@ class TestSourceAccess(unittest.TestCase):
 					),
 				):
 					self.assertEqual(sources.DocsSourceRenderer("docs").render().data, b"private search data")
+					frappe.local.request.path = "/docs/guide/assets/desk/desk.js"
+					self.assertEqual(sources.DocsSourceRenderer("docs").render().data, b"private React mount")
+					frappe.local.request.path = "/docs/guide/assets/desk/desk.css"
+					self.assertEqual(sources.DocsSourceRenderer("docs").render().data, b"private styles")
 					with patch.object(sources, "get_site_sources", return_value=[]):
 						self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
 
