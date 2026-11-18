@@ -285,3 +285,5 @@ page_renderer = ["the_frappe_docs.sources.DocsSourceRenderer"]
 before_install = "the_frappe_docs.sources.validate_install_sources"
 before_app_install = "the_frappe_docs.sources.validate_install_sources"
 before_migrate = "the_frappe_docs.sources.get_site_sources"
+
+boot_session = "the_frappe_docs.boot.boot_session"

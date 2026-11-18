@@ -47,6 +47,11 @@ def is_built(source):
 def get_sources():
 	"""List allowed source titles without exposing other sites' registrations."""
 	frappe.local.response.headers = {"Cache-Control": "private, no-store", "Vary": "Cookie, Host"}
+	return get_available_sources()
+
+
+def get_available_sources():
+	"""Share the installed, accessible, built source list with Desk boot."""
 	return [
 		dict(
 			app=source["app"],
