@@ -27,6 +27,25 @@ export default async function checkDeskBrowser(page) {
     .getByRole("heading", { name: "Setting Up", exact: true })
     .waitFor();
   if (page.url() !== desk) throw new Error("React changed the Desk URL");
+  // Inject plain anchors to exercise Markdown-style links without editing source content.
+  await page.evaluate(() => {
+    const link = document.createElement("a");
+    link.textContent = "Check relative document link";
+    link.href = "./hello-world?scope=team#hello-world";
+    document
+      .querySelector(".desk-docs-host")
+      .shadowRoot.querySelector("section")
+      .append(link);
+  });
+  await page
+    .getByRole("link", { name: "Check relative document link" })
+    .click();
+  await page
+    .getByRole("heading", { name: "Hello World", exact: true })
+    .first()
+    .waitFor();
+  if (page.url() !== desk) throw new Error("Markdown link left Desk");
+
   await page.getByRole("link", { name: "List", exact: true }).click();
   await page
     .getByRole("heading", { name: "Filter documents", exact: true })

@@ -73,7 +73,7 @@ the_frappe_docs.make_viewer = function (wrapper, slug) {
 				styled,
 			]);
 			if (generation !== load_generation) return;
-			unmount = frontend.mount(host);
+			unmount = frontend.mount(host, source.url);
 			status.remove();
 			container.setAttribute("aria-busy", "false");
 		} catch {
