@@ -67,6 +67,16 @@ export default defineConfig({
       plugins: [
         {
           postcssPlugin: "desk-shadow-selectors",
+          OnceExit(root) {
+            const defaults: string[] = [];
+            root.walkAtRules("property", (property) => {
+              property.walkDecls("initial-value", (declaration) => {
+                defaults.push(`${property.params}:${declaration.value}`);
+              });
+            });
+            // Shadow stylesheets do not register @property defaults in Chromium.
+            root.append(`@layer properties { :host, *, ::before, ::after { ${defaults.join(";")} } }`);
+          },
           Rule(rule) {
             rule.selector = rule.selector
               .replace(/:root|\bhtml\b/g, ":host")

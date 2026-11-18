@@ -5,6 +5,19 @@ export default async function checkDeskBrowser(page) {
   );
   await page.goto(desk);
   await page.getByRole("heading", { name: "The Docs", exact: true }).waitFor();
+  const borders = await page.evaluate(() => {
+    const root = document.querySelector(".desk-docs-host").shadowRoot;
+    return [
+      root.querySelector("header"),
+      root.querySelector(".border-b"),
+      root.querySelector(".divide-y > li"),
+    ].every(
+      (element) =>
+        getComputedStyle(element).borderBottomWidth === "1px" &&
+        getComputedStyle(element).borderBottomStyle === "solid"
+    );
+  });
+  if (!borders) throw new Error("Documentation separator lines are missing");
   if (await page.locator(".desk-docs-directory iframe").count())
     throw new Error("Desk must not use an iframe");
   await page
