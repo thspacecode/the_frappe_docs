@@ -48,3 +48,12 @@ class TestSourceConfig(unittest.TestCase):
 			config.validate_source_registry([baseline[0], dict(app="second", slug="guide")])
 		with self.assertRaisesRegex(ValueError, "source is reserved"):
 			config.validate_source_registry([dict(app="first", slug="source")])
+
+	def test_component_sources_reject_symlinks(self):
+		with tempfile.TemporaryDirectory() as directory:
+			root = Path(directory)
+			(root / "docs/_components").mkdir(parents=True)
+			(root / "outside.ts").write_text("export default {};")
+			(root / "docs/_components/index.ts").symlink_to(root / "outside.ts")
+			with self.assertRaisesRegex(ValueError, "symlinks"):
+				config.validate_sources("demo", root, [dict(slug="guide", path="docs")])

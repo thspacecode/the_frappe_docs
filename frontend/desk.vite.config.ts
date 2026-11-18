@@ -1,19 +1,8 @@
 import { fileURLToPath } from "node:url";
-import { createViteConfig } from "@the-docs/preset-default/vite";
-import { defineConfig, type Plugin, type PluginOption } from "vite";
-import docsConfig from "./docs.config.ts";
+import { createDocsConfig, flattenPlugins } from "./docs-vite-config.ts";
+import { defineConfig, type Plugin } from "vite";
 
-function flattenPlugins(plugins: PluginOption[]): Plugin[] {
-  return plugins.flatMap((plugin): Plugin[] =>
-    Array.isArray(plugin)
-      ? flattenPlugins(plugin)
-      : plugin && typeof plugin === "object" && "name" in plugin
-        ? [plugin]
-        : [],
-  );
-}
-
-const preset = createViteConfig(docsConfig);
+const preset = createDocsConfig();
 const bridge = fileURLToPath(
   new URL("./app/desk-boundary.tsx", import.meta.url),
 );
@@ -58,7 +47,7 @@ export default defineConfig({
     ...flattenPlugins(preset.plugins ?? []).filter(
       (plugin) =>
         plugin.name.startsWith("@tailwindcss/") ||
-        ["the-docs-content", "@mdx-js/rollup"].includes(plugin.name),
+        ["the-docs-content", "@mdx-js/rollup", "docs-source-components"].includes(plugin.name),
     ),
     boundary,
   ],
