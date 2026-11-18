@@ -5,6 +5,10 @@ export default async function checkDeskBrowser(page) {
   );
   await page.goto(desk);
   await page.getByRole("heading", { name: "The Docs", exact: true }).waitFor();
+  if (
+    await page.getByText("All documentation sources", { exact: true }).count()
+  )
+    throw new Error("The retired source navigation header is still visible");
   const borders = await page.evaluate(() => {
     const root = document.querySelector(".desk-docs-host").shadowRoot;
     return [

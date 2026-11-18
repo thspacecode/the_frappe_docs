@@ -67,9 +67,3 @@ body:has(.desk-docs-fullscreen:not(.hide)) .main-section > footer {
 		animation-duration: 2s;
 	}
 }
-
-.desk-docs-source-navigation {
-	padding: 0.5rem 1rem;
-	border-bottom: 1px solid var(--border-color);
-	background: var(--fg-color);
-}

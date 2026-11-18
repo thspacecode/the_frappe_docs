@@ -79,14 +79,6 @@ the_frappe_docs.make_viewer = function (wrapper) {
 			page.set_title(source.title);
 			container.classList.add("desk-docs-embedded");
 			wrapper.classList.add("desk-docs-fullscreen");
-			const navigation = document.createElement("nav");
-			navigation.className = "desk-docs-source-navigation";
-			navigation.setAttribute("aria-label", __("Documentation sources"));
-			const back = document.createElement("a");
-			back.href = "/desk/the-frappe-docs/docs-viewer";
-			back.textContent = __("All documentation sources");
-			navigation.append(back);
-			container.prepend(navigation);
 			const host = document.createElement("div");
 			host.className = "desk-docs-host";
 			const shadow = host.attachShadow({ mode: "open" });
