@@ -4,3 +4,6 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+the_frappe_docs.patches.v0_0.remove_docs_selector
+
+the_frappe_docs.patches.v0_0.remove_the_docs_source

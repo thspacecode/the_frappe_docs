@@ -6,13 +6,16 @@ import frappe
 from frappe.website.page_renderers.base_renderer import BaseRenderer
 from werkzeug.wrappers import Response
 
-from the_frappe_docs.source_config import validate_sources
+from the_frappe_docs.source_config import validate_source_registry, validate_sources
 
 
-def get_site_sources():
+def get_site_sources(app=None):
 	"""Read declarations only from apps installed on the current site."""
 	sources = []
-	for app in frappe.get_installed_apps():
+	apps = list(frappe.get_installed_apps())
+	if app and app not in apps:
+		apps.append(app)
+	for app in apps:
 		sources.extend(
 			validate_sources(
 				app,
@@ -20,7 +23,7 @@ def get_site_sources():
 				frappe.get_hooks("the_frappe_docs_sources", app_name=app) or [],
 			)
 		)
-	return sources
+	return validate_source_registry(sources)
 
 
 def can_access_source(source):
@@ -50,7 +53,7 @@ def get_sources():
 			app=source["app"],
 			slug=source["slug"],
 			title=source["title"],
-			url=f"/docs/source/{source['app']}/{source['slug']}",
+			url=f"/docs/{source['slug']}",
 		)
 		for source in get_site_sources()
 		if can_access_source(source) and is_built(source)
@@ -68,21 +71,34 @@ def resolve_build_file(source, relative_path):
 
 class DocsSourceRenderer(BaseRenderer):
 	def can_render(self):
-		return frappe.local.request.path.startswith("/docs/source/")
+		return frappe.local.request.path.startswith("/docs/")
 
 	def render(self):
 		import mimetypes
 
-		parts = frappe.local.request.path.split("/", 5)
-		if len(parts) < 5:
+		request = frappe.local.request
+		parts = request.path.split("/", 3)
+		slug = parts[2]
+		remainder = parts[3] if len(parts) == 4 else ""
+		legacy_app = None
+		if slug == "source":
+			legacy = remainder.split("/", 2)
+			if len(legacy) < 2:
+				return self.respond("Source not found", 404)
+			legacy_app, slug = legacy[:2]
+			remainder = legacy[2] if len(legacy) == 3 else ""
+		source = next((source for source in get_site_sources() if source["slug"] == slug), None)
+		if not source or (legacy_app and source["app"] != legacy_app):
 			return self.respond("Source not found", 404)
-		app, slug = parts[3:5]
-		source = next(
-			(source for source in get_site_sources() if source["app"] == app and source["slug"] == slug), None
-		)
-		if not source:
-			return self.respond("Source not found", 404)
-		remainder = parts[5] if len(parts) == 6 else ""
+		if legacy_app:
+			target = f"/docs/{slug}"
+			if remainder:
+				target += "/" + remainder
+			if request.query_string:
+				target += "?" + request.query_string.decode("utf-8")
+			response = self.respond("", 301)
+			response.headers["Location"] = target
+			return response
 		if not can_access_source(source):
 			if frappe.session.user == "Guest" and not remainder.startswith("assets/"):
 				request = frappe.local.request
@@ -117,3 +133,8 @@ class DocsSourceRenderer(BaseRenderer):
 				"X-Content-Type-Options": "nosniff",
 			},
 		)
+
+
+def validate_install_sources(app="the_frappe_docs"):
+	"""Check the incoming app together with all installed source registrations."""
+	get_site_sources(app)

@@ -49,7 +49,7 @@ class TestSourceAccess(unittest.TestCase):
 							"local",
 							frappe._dict(
 								request=frappe._dict(
-									path=f"/docs/source/bmu_core/guide{suffix}",
+									path=f"/docs/guide{suffix}",
 									query_string=b"scope=guide&x=1",
 								)
 							),
@@ -60,7 +60,7 @@ class TestSourceAccess(unittest.TestCase):
 						if not suffix:
 							self.assertEqual(
 								response.headers["Location"],
-								"/login?redirect-to=%2Fdocs%2Fsource%2Fbmu_core%2Fguide%3Fscope%3Dguide%26x%3D1",
+								"/login?redirect-to=%2Fdocs%2Fguide%3Fscope%3Dguide%26x%3D1",
 							)
 						self.assertNotIn(b"private", response.data)
 						self.assertEqual(response.headers["Cache-Control"], "private, no-store")
@@ -69,9 +69,7 @@ class TestSourceAccess(unittest.TestCase):
 					patch.object(
 						frappe,
 						"local",
-						frappe._dict(
-							request=frappe._dict(path="/docs/source/bmu_core/guide/assets/search.js")
-						),
+						frappe._dict(request=frappe._dict(path="/docs/guide/assets/search.js")),
 					),
 				):
 					self.assertEqual(sources.DocsSourceRenderer("docs").render().data, b"private search data")
@@ -91,7 +89,7 @@ class TestSourceAccess(unittest.TestCase):
 				patch.object(
 					frappe,
 					"local",
-					frappe._dict(request=frappe._dict(path="/docs/source/bmu_core/public/assets/guide.js")),
+					frappe._dict(request=frappe._dict(path="/docs/public/assets/guide.js")),
 				),
 				patch.object(frappe, "session", frappe._dict(user="Guest")),
 			):
@@ -120,3 +118,54 @@ class TestSourceAccess(unittest.TestCase):
 		):
 			self.assertEqual(sources.get_site_sources(), [])
 			hooks.assert_called_once_with("the_frappe_docs_sources", app_name="bmu_core")
+
+	def test_render_legacy_redirect(self):
+		"""Preserve nested pages and queries without accepting the wrong app owner."""
+		source = dict(app="bmu_core", slug="guide")
+		with (
+			patch.object(sources, "get_site_sources", return_value=[source]),
+			patch.object(
+				frappe,
+				"local",
+				frappe._dict(
+					request=frappe._dict(
+						path="/docs/source/bmu_core/guide/tags/tree",
+						query_string=b"scope=guide&x=1",
+					)
+				),
+			),
+		):
+			response = sources.DocsSourceRenderer("docs").render()
+			self.assertEqual(response.status_code, 301)
+			self.assertEqual(response.headers["Location"], "/docs/guide/tags/tree?scope=guide&x=1")
+			frappe.local.request.path = "/docs/source/wrong_app/guide/tags/tree"
+			self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
+
+	def test_get_site_sources_conflict(self):
+		"""Check installed owners at runtime and include an incoming app before installation."""
+		with (
+			patch.object(frappe, "get_installed_apps", return_value=["first"]),
+			patch.object(frappe, "get_hooks", return_value=[]),
+			patch.object(frappe, "get_app_path", return_value="/apps/demo/demo"),
+			patch.object(
+				sources, "validate_sources", side_effect=lambda app, *_: [dict(app=app, slug="guide")]
+			),
+		):
+			self.assertEqual(sources.get_site_sources(), [dict(app="first", slug="guide")])
+			with self.assertRaisesRegex(ValueError, "guide: first and second"):
+				sources.validate_install_sources("second")
+			with patch.object(frappe, "get_installed_apps", return_value=["first", "second"]):
+				with self.assertRaisesRegex(ValueError, "guide: first and second"):
+					sources.get_site_sources()
+
+	def test_get_sources(self):
+		"""Advertise the short canonical URL only for accessible built sources."""
+		with (
+			patch.object(
+				sources, "get_site_sources", return_value=[dict(app="bmu_core", slug="guide", title="Guide")]
+			),
+			patch.object(sources, "can_access_source", return_value=True),
+			patch.object(sources, "is_built", return_value=True),
+			patch.object(frappe, "local", frappe._dict(response=frappe._dict())),
+		):
+			self.assertEqual(sources.get_sources()[0]["url"], "/docs/guide")

@@ -29,7 +29,7 @@ for (const source of sources) {
   const content = new URL("../.content/", import.meta.url);
   rmSync(content, { recursive: true, force: true });
   cpSync(source.content_root, content, { recursive: true });
-  const base = `/docs/source/${source.app}/${source.slug}`;
+  const base = `/docs/${source.slug}`;
   execFileSync("npx", ["--no-install", "react-router", "build"], {
     cwd: frontend,
     stdio: "inherit",

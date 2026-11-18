@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <title>Docs</title>
+  <rect width="128" height="128" rx="28" fill="#2563EB"/>
+  <path d="M64 39C53 31 39 30 24 34V91C39 87 53 88 64 96C75 88 89 87 104 91V34C89 30 75 31 64 39Z" fill="#FFFFFF"/>
+  <path d="M64 40V94" stroke="#2563EB" stroke-width="4" stroke-linecap="round"/>
+  <path d="M35 48C42 47 49 48 54 51M35 61C42 60 49 61 54 64M35 74C42 73 49 74 54 77M74 51C79 48 86 47 93 48M74 64C79 61 86 60 93 61M74 77C79 74 86 73 93 74" stroke="#93C5FD" stroke-width="4" stroke-linecap="round"/>
+</svg>
