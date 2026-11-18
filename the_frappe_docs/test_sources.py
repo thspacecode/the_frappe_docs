@@ -55,15 +55,6 @@ class TestSourceAccess(unittest.TestCase):
 					self.assertEqual(sources.DocsSourceRenderer("docs").render().data, b"private React mount")
 					frappe.local.request.path = "/docs-assets/guide/index.html"
 					self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
-					frappe.local.request.path = "/docs/guide/assets/desk/desk.js"
-					self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
-				frappe.local.request.path = "/docs/guide/p/setup"
-				frappe.local.request.query_string = b"scope=guide&x=1"
-				response = sources.DocsSourceRenderer("docs").render()
-				self.assertEqual(response.status_code, 404)
-				self.assertNotIn("Location", response.headers)
-				with patch.object(sources, "get_site_sources", return_value=[]):
-					self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
 
 	def test_render_public_source(self):
 		"""Allow guest assets only while the owning app is installed."""
@@ -114,31 +105,20 @@ class TestSourceAccess(unittest.TestCase):
 			self.assertEqual(sources.get_site_sources(), [])
 			hooks.assert_called_once_with("the_frappe_docs_sources", app_name="bmu_core")
 
-	def test_render_retired_routes(self):
-		"""Return 404 without redirects for retired documentation URLs."""
-		source = dict(app="bmu_core", slug="guide")
-		with (
-			patch.object(sources, "get_site_sources", return_value=[source]),
-			patch.object(
-				frappe,
-				"local",
-				frappe._dict(
-					request=frappe._dict(
-						path="/docs/source/bmu_core/guide/tags/tree",
-						query_string=b"scope=guide&x=1",
-					)
-				),
-			),
-		):
-			response = sources.DocsSourceRenderer("docs").render()
-			self.assertEqual(response.status_code, 404)
-			self.assertNotIn("Location", response.headers)
-			frappe.local.request.path = "/docs/guide"
-			response = sources.DocsSourceRenderer("docs").render()
-			self.assertEqual(response.status_code, 404)
-			self.assertNotIn("Location", response.headers)
-			frappe.local.request.path = "/docs/source/wrong_app/guide/tags/tree"
-			self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
+	def test_can_render(self):
+		"""Leave retired documentation routes to Frappe's default page renderer."""
+		with patch.object(frappe, "local", frappe._dict(request=frappe._dict())):
+			frappe.local.request.path = "/docs-assets/guide/assets/desk/desk.js"
+			self.assertTrue(sources.DocsSourceRenderer("docs").can_render())
+			for path in (
+				"/docs/guide",
+				"/docs/guide/p/setup",
+				"/docs/guide/assets/desk/desk.js",
+				"/docs/source/bmu_core/guide/tags/tree",
+			):
+				with self.subTest(path=path):
+					frappe.local.request.path = path
+					self.assertFalse(sources.DocsSourceRenderer("docs").can_render())
 
 	def test_get_site_sources_conflict(self):
 		"""Check installed owners at runtime and include an incoming app before installation."""

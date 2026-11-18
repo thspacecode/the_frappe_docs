@@ -74,14 +74,12 @@ def resolve_build_file(source, relative_path):
 
 class DocsSourceRenderer(BaseRenderer):
 	def can_render(self):
-		return frappe.local.request.path.startswith(("/docs/", "/docs-assets/"))
+		return frappe.local.request.path.startswith("/docs-assets/")
 
 	def render(self):
 		import mimetypes
 
 		request = frappe.local.request
-		if request.path.startswith("/docs/"):
-			return self.respond("Documentation is available in Desk", 404)
 		parts = request.path.split("/", 3)
 		slug = parts[2]
 		remainder = parts[3] if len(parts) == 4 else ""
