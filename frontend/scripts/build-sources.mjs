@@ -1,12 +1,5 @@
 import { execFileSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const frontend = fileURLToPath(new URL("../", import.meta.url));
@@ -29,25 +22,27 @@ for (const source of sources) {
   const content = new URL("../.content/", import.meta.url);
   rmSync(content, { recursive: true, force: true });
   cpSync(source.content_root, content, { recursive: true });
-  const base = `/docs/source/${source.app}/${source.slug}`;
-  execFileSync("npx", ["--no-install", "react-router", "build"], {
-    cwd: frontend,
-    stdio: "inherit",
-    env: { ...process.env, THE_DOCS_SOURCE_BASE: base },
-  });
+  const base = `/docs-assets/${source.slug}`;
   const target = new URL(`${source.app}/${source.slug}/`, staging);
   mkdirSync(target, { recursive: true });
+  execFileSync(
+    "npx",
+    ["--no-install", "vite", "build", "--config", "desk.vite.config.ts"],
+    {
+      cwd: frontend,
+      stdio: "inherit",
+      env: { ...process.env, THE_DOCS_SOURCE_BASE: base },
+    }
+  );
   cpSync(
-    new URL("../.build/client/", import.meta.url),
-    new URL("client/", target),
+    new URL("../.desk-build/", import.meta.url),
+    new URL("client/assets/desk/", target),
     { recursive: true }
   );
   writeFileSync(
     new URL("source.json", target),
     JSON.stringify({ app: source.app, slug: source.slug, path: source.path })
   );
-  if (!existsSync(new URL("client/index.html", target)))
-    throw Error("Missing SPA shell");
 }
 rmSync(output, { recursive: true, force: true });
 renameSync(staging, output);

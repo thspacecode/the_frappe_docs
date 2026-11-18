@@ -27,56 +27,34 @@ class TestSourceAccess(unittest.TestCase):
 			self.assertFalse(sources.can_access_source(dict(app="other_app", allow_guest=False)))
 
 	def test_render(self):
-		"""Check source access before reading pages or nested assets, without a database."""
+		"""Protect nested assets and retire the standalone page and asset paths."""
 		source = dict(app="bmu_core", slug="guide", path="docs", allow_guest=False)
 		with tempfile.TemporaryDirectory() as directory:
 			root = Path(directory)
-			(root / "client/assets").mkdir(parents=True)
-			(root / "client/index.html").write_text("private document")
-			(root / "client/assets/search.js").write_text("private search data")
+			(root / "client/assets/desk").mkdir(parents=True)
+			(root / "client/assets/desk/desk.js").write_text("private React mount")
 			(root / "source.json").write_text(json.dumps(source))
 			with (
 				patch.object(sources, "get_site_sources", return_value=[source]),
 				patch.object(sources, "get_build_directory", return_value=root),
 				patch.object(frappe, "get_installed_apps", return_value=["bmu_core"]),
 				patch.object(frappe, "session", frappe._dict(user="Guest")),
-			):
-				for suffix in ("", "/assets/search.js"):
-					with (
-						self.subTest(suffix=suffix),
-						patch.object(
-							frappe,
-							"local",
-							frappe._dict(
-								request=frappe._dict(
-									path=f"/docs/source/bmu_core/guide{suffix}",
-									query_string=b"scope=guide&x=1",
-								)
-							),
-						),
-					):
-						response = sources.DocsSourceRenderer("docs").render()
-						self.assertEqual(response.status_code, 403 if suffix else 302)
-						if not suffix:
-							self.assertEqual(
-								response.headers["Location"],
-								"/login?redirect-to=%2Fdocs%2Fsource%2Fbmu_core%2Fguide%3Fscope%3Dguide%26x%3D1",
-							)
-						self.assertNotIn(b"private", response.data)
-						self.assertEqual(response.headers["Cache-Control"], "private, no-store")
-				with (
-					patch.object(frappe, "session", frappe._dict(user="Administrator")),
-					patch.object(
-						frappe,
-						"local",
-						frappe._dict(
-							request=frappe._dict(path="/docs/source/bmu_core/guide/assets/search.js")
-						),
+				patch.object(
+					frappe,
+					"local",
+					frappe._dict(
+						request=frappe._dict(path="/docs-assets/guide/assets/desk/desk.js", query_string=b"")
 					),
-				):
-					self.assertEqual(sources.DocsSourceRenderer("docs").render().data, b"private search data")
-					with patch.object(sources, "get_site_sources", return_value=[]):
-						self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
+				),
+			):
+				response = sources.DocsSourceRenderer("docs").render()
+				self.assertEqual(response.status_code, 403)
+				self.assertNotIn(b"private", response.data)
+				self.assertEqual(response.headers["Cache-Control"], "private, no-store")
+				with patch.object(frappe, "session", frappe._dict(user="Administrator")):
+					self.assertEqual(sources.DocsSourceRenderer("docs").render().data, b"private React mount")
+					frappe.local.request.path = "/docs-assets/guide/index.html"
+					self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
 
 	def test_render_public_source(self):
 		"""Allow guest assets only while the owning app is installed."""
@@ -91,7 +69,7 @@ class TestSourceAccess(unittest.TestCase):
 				patch.object(
 					frappe,
 					"local",
-					frappe._dict(request=frappe._dict(path="/docs/source/bmu_core/public/assets/guide.js")),
+					frappe._dict(request=frappe._dict(path="/docs-assets/public/assets/guide.js")),
 				),
 				patch.object(frappe, "session", frappe._dict(user="Guest")),
 			):
@@ -107,9 +85,15 @@ class TestSourceAccess(unittest.TestCase):
 			(root / "client").mkdir()
 			(root / "secret.txt").write_text("secret")
 			(root / "client/link.txt").symlink_to(root / "secret.txt")
+			(root / "client/valid.txt").write_text("valid")
+			(root / "client/internal.txt").symlink_to(root / "client/valid.txt")
+			(root / "client/linked-directory").symlink_to(root / "client", target_is_directory=True)
 			with patch.object(sources, "get_build_directory", return_value=root):
 				self.assertIsNone(sources.resolve_build_file({}, "../secret.txt"))
 				self.assertIsNone(sources.resolve_build_file({}, "link.txt"))
+				self.assertIsNone(sources.resolve_build_file({}, "internal.txt"))
+				self.assertIsNone(sources.resolve_build_file({}, "linked-directory/valid.txt"))
+				self.assertEqual(sources.resolve_build_file({}, "valid.txt"), root / "client/valid.txt")
 
 	def test_get_site_sources(self):
 		"""Do not inspect hooks from apps absent from the current site."""
@@ -120,3 +104,48 @@ class TestSourceAccess(unittest.TestCase):
 		):
 			self.assertEqual(sources.get_site_sources(), [])
 			hooks.assert_called_once_with("the_frappe_docs_sources", app_name="bmu_core")
+
+	def test_can_render(self):
+		"""Leave retired documentation routes to Frappe's default page renderer."""
+		with patch.object(frappe, "local", frappe._dict(request=frappe._dict())):
+			frappe.local.request.path = "/docs-assets/guide/assets/desk/desk.js"
+			self.assertTrue(sources.DocsSourceRenderer("docs").can_render())
+			for path in (
+				"/docs/guide",
+				"/docs/guide/p/setup",
+				"/docs/guide/assets/desk/desk.js",
+				"/docs/source/bmu_core/guide/tags/tree",
+			):
+				with self.subTest(path=path):
+					frappe.local.request.path = path
+					self.assertFalse(sources.DocsSourceRenderer("docs").can_render())
+
+	def test_get_site_sources_conflict(self):
+		"""Check installed owners at runtime and include an incoming app before installation."""
+		with (
+			patch.object(frappe, "get_installed_apps", return_value=["first"]),
+			patch.object(frappe, "get_hooks", return_value=[]),
+			patch.object(frappe, "get_app_path", return_value="/apps/demo/demo"),
+			patch.object(
+				sources, "validate_sources", side_effect=lambda app, *_: [dict(app=app, slug="guide")]
+			),
+		):
+			self.assertEqual(sources.get_site_sources(), [dict(app="first", slug="guide")])
+			with self.assertRaisesRegex(ValueError, "guide: first and second"):
+				sources.validate_install_sources("second")
+			with patch.object(frappe, "get_installed_apps", return_value=["first", "second"]):
+				with self.assertRaisesRegex(ValueError, "guide: first and second"):
+					sources.get_site_sources()
+
+	def test_get_sources(self):
+		"""Separate Desk routes from protected asset URLs for built sources."""
+		with (
+			patch.object(
+				sources, "get_site_sources", return_value=[dict(app="bmu_core", slug="guide", title="Guide")]
+			),
+			patch.object(sources, "can_access_source", return_value=True),
+			patch.object(sources, "is_built", return_value=True),
+			patch.object(frappe, "local", frappe._dict(response=frappe._dict())),
+		):
+			self.assertEqual(sources.get_sources()[0]["desk_url"], "/desk/the-frappe-docs/docs-viewer/guide")
+			self.assertEqual(sources.get_sources()[0]["asset_base"], "/docs-assets/guide")

@@ -26,6 +26,7 @@
 	"root": true,
 	"globals": {
 		"frappe": true,
+		"the_frappe_docs": "readonly",
 		"Vue": true,
 		"SetVueGlobals": true,
 		"__": true,

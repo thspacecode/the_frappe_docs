@@ -39,3 +39,12 @@ class TestSourceConfig(unittest.TestCase):
 				'raise RuntimeError("do not execute")\nthe_frappe_docs_sources = [{"slug": "guide", "path": "docs"}]'
 			)
 			self.assertEqual(config.read_source_hook("demo", root)[0]["slug"], "guide")
+
+	def test_validate_source_registry(self):
+		"""Reject ambiguous owners and reserve the old route prefix."""
+		baseline = [dict(app="first", slug="guide"), dict(app="second", slug="manual")]
+		self.assertEqual(config.validate_source_registry(baseline), baseline)
+		with self.assertRaisesRegex(ValueError, "guide: first and second"):
+			config.validate_source_registry([baseline[0], dict(app="second", slug="guide")])
+		with self.assertRaisesRegex(ValueError, "source is reserved"):
+			config.validate_source_registry([dict(app="first", slug="source")])

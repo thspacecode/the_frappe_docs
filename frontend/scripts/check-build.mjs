@@ -1,20 +1,42 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 
 const app = new URL("../../the_frappe_docs/", import.meta.url);
-const client = new URL("private_build/the_frappe_docs/the-docs/client/", app);
-const page = readFileSync(new URL("index.html", client), "utf8");
+const output = new URL("private_build/", app);
 assert.ok(
   !existsSync(new URL("public/frontend/", app)),
   "Source output must not be public"
 );
-assert.ok(page.includes('"basename":"/docs/source/the_frappe_docs/the-docs"'));
-const assets = [
-  ...page.matchAll(
-    /(?:src|href)="\/docs\/source\/the_frappe_docs\/the-docs\/(assets\/[^"?#]+)"/g
-  ),
-];
-assert.ok(assets.length > 0);
-for (const [, asset] of assets)
-  assert.ok(existsSync(new URL(asset, client)), `Missing asset: ${asset}`);
+for (const owner of readdirSync(output)) {
+  for (const slug of readdirSync(new URL(`${owner}/`, output))) {
+    const client = new URL(`${owner}/${slug}/client/`, output);
+    const desk = readFileSync(new URL("assets/desk/desk.js", client), "utf8");
+    assert.match(desk, /mount/);
+    const styles = readFileSync(
+      new URL("assets/desk/desk.css", client),
+      "utf8"
+    );
+    assert.ok(
+      styles.includes(":host"),
+      "Desk styles must target the shadow host"
+    );
+    assert.ok(
+      !/(^|[},])\s*:root\s*[{,]/m.test(styles),
+      "Root styles must stay in Shadow DOM"
+    );
+    assert.ok(
+      !existsSync(new URL("index.html", client)),
+      "No standalone shell"
+    );
+    assert.ok(!desk.includes(`/docs/${slug}/assets/`));
+    for (const match of styles.matchAll(/url\(["']?([^)'" ]+)/g)) {
+      const url = match[1];
+      if (url.startsWith("data:")) continue;
+      const asset = url.startsWith(`/docs-assets/${slug}/`)
+        ? url.slice(`/docs-assets/${slug}/`.length)
+        : `assets/desk/${url}`;
+      assert.ok(existsSync(new URL(asset, client)), `Missing asset: ${asset}`);
+    }
+  }
+}
 console.log("Protected source output and asset paths passed.");

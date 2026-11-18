@@ -1,0 +1,69 @@
+.desk-docs-directory {
+	padding: 1.5rem;
+}
+
+.desk-docs-directory.desk-docs-embedded {
+	padding: 0;
+}
+
+.desk-docs-host {
+	display: block;
+	width: 100%;
+	min-height: 100dvh;
+	border: 0;
+	background: var(--desk-docs-background, #fcfcfc);
+}
+
+.desk-docs-fullscreen > .page-head {
+	display: none;
+}
+
+.desk-docs-fullscreen > .page-body {
+	padding: 0;
+	margin: 0;
+	max-width: none;
+	width: 100%;
+}
+
+.desk-docs-fullscreen .layout-main-section-wrapper {
+	margin-bottom: 0;
+}
+
+body:has(.desk-docs-fullscreen:not(.hide)) .main-section > footer {
+	display: none;
+}
+
+.desk-docs-embedded {
+	position: relative;
+	min-height: 100dvh;
+}
+
+.desk-docs-loading {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	display: grid;
+	place-items: center;
+	background: var(--desk-docs-background, #fcfcfc);
+}
+
+.desk-docs-spinner {
+	width: 2rem;
+	height: 2rem;
+	border: 2px solid #e5e5e5;
+	border-top-color: #a3a3a3;
+	border-radius: 50%;
+	animation: desk-docs-spin 0.8s linear infinite;
+}
+
+@keyframes desk-docs-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.desk-docs-spinner {
+		animation-duration: 2s;
+	}
+}

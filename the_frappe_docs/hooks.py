@@ -10,16 +10,15 @@ app_license = "mit"
 
 # required_apps = []
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "the_frappe_docs",
-# 		"logo": "/assets/the_frappe_docs/logo.png",
-# 		"title": "The Frappe Docs",
-# 		"route": "/the_frappe_docs",
-# 		"has_permission": "the_frappe_docs.api.permission.has_app_permission",
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": app_name,
+		"logo": "/assets/the_frappe_docs/images/docs.svg",
+		"title": "Docs",
+		"route": "/desk/docs-viewer",
+		"sequence_id": 20,
+	}
+]
 
 # The dock, the rail down the left of the desk, is a document rather than a hook. Author it in
 # Manage Dock on a developer-mode site and press Export to App, and it is written to
@@ -280,15 +279,11 @@ app_license = "mit"
 # ignore_translatable_strings_from = []
 
 
-website_route_rules = [{"from_route": "/docs/<path:app_path>", "to_route": "docs"}]
-
 page_renderer = ["the_frappe_docs.sources.DocsSourceRenderer"]
 
-the_frappe_docs_sources = [
-	{
-		"slug": "the-docs",
-		"title": "The Docs",
-		"path": "frontend/vendor/the-docs/docs",
-		"allow_guest": True,
-	}
-]
+
+before_install = "the_frappe_docs.sources.validate_install_sources"
+before_app_install = "the_frappe_docs.sources.validate_install_sources"
+before_migrate = "the_frappe_docs.sources.get_site_sources"
+
+boot_session = "the_frappe_docs.boot.boot_session"

@@ -64,3 +64,5 @@ jspm_packages/
 
 /the_frappe_docs/private_build/
 /the_frappe_docs/private_build.next/
+
+frontend/.desk-build/

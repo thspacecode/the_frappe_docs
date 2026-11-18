@@ -58,3 +58,16 @@ def read_source_hook(app, repository):
 		):
 			return validate_sources(app, repository, ast.literal_eval(node.value))
 	return []
+
+
+def validate_source_registry(sources):
+	"""Require one owner per slug and keep the legacy route prefix available."""
+	owners = {}
+	for source in sources:
+		slug, app = source["slug"], source["app"]
+		if slug == "source":
+			raise ValueError(f"{app}: source slug {slug} is reserved for legacy documentation URLs")
+		if slug in owners:
+			raise ValueError(f"Duplicate documentation source slug {slug}: {owners[slug]} and {app}")
+		owners[slug] = app
+	return sources
