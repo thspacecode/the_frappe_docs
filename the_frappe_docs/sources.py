@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from urllib.parse import urlencode
 
 import frappe
 from frappe.website.page_renderers.base_renderer import BaseRenderer
@@ -81,32 +80,14 @@ class DocsSourceRenderer(BaseRenderer):
 		import mimetypes
 
 		request = frappe.local.request
+		if request.path.startswith("/docs/"):
+			return self.respond("Documentation is available in Desk", 404)
 		parts = request.path.split("/", 3)
 		slug = parts[2]
 		remainder = parts[3] if len(parts) == 4 else ""
-		legacy_app = None
-		if parts[1] == "docs" and slug == "source":
-			legacy = remainder.split("/", 2)
-			if len(legacy) < 2:
-				return self.respond("Source not found", 404)
-			legacy_app, slug = legacy[:2]
-			remainder = legacy[2] if len(legacy) == 3 else ""
 		source = next((source for source in get_site_sources() if source["slug"] == slug), None)
-		if not source or (legacy_app and source["app"] != legacy_app):
+		if not source:
 			return self.respond("Source not found", 404)
-		assets = request.path.startswith("/docs-assets/")
-		if not assets:
-			if remainder.startswith("assets/"):
-				return self.respond("Asset endpoint retired", 404)
-			target = f"/desk/the-frappe-docs/docs-viewer/{slug}"
-			route = "/" + remainder
-			if request.query_string:
-				route += "?" + request.query_string.decode("utf-8")
-			if route != "/":
-				target += "?" + urlencode({"doc": route})
-			response = self.respond("", 301)
-			response.headers["Location"] = target
-			return response
 		if not can_access_source(source):
 			return self.respond("Login required", 403)
 		if not is_built(source):

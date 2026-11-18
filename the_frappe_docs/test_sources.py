@@ -60,11 +60,8 @@ class TestSourceAccess(unittest.TestCase):
 				frappe.local.request.path = "/docs/guide/p/setup"
 				frappe.local.request.query_string = b"scope=guide&x=1"
 				response = sources.DocsSourceRenderer("docs").render()
-				self.assertEqual(response.status_code, 301)
-				self.assertEqual(
-					response.headers["Location"],
-					"/desk/the-frappe-docs/docs-viewer/guide?doc=%2Fp%2Fsetup%3Fscope%3Dguide%26x%3D1",
-				)
+				self.assertEqual(response.status_code, 404)
+				self.assertNotIn("Location", response.headers)
 				with patch.object(sources, "get_site_sources", return_value=[]):
 					self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
 
@@ -117,8 +114,8 @@ class TestSourceAccess(unittest.TestCase):
 			self.assertEqual(sources.get_site_sources(), [])
 			hooks.assert_called_once_with("the_frappe_docs_sources", app_name="bmu_core")
 
-	def test_render_legacy_redirect(self):
-		"""Preserve nested pages and queries without accepting the wrong app owner."""
+	def test_render_retired_routes(self):
+		"""Return 404 without redirects for retired documentation URLs."""
 		source = dict(app="bmu_core", slug="guide")
 		with (
 			patch.object(sources, "get_site_sources", return_value=[source]),
@@ -134,11 +131,12 @@ class TestSourceAccess(unittest.TestCase):
 			),
 		):
 			response = sources.DocsSourceRenderer("docs").render()
-			self.assertEqual(response.status_code, 301)
-			self.assertEqual(
-				response.headers["Location"],
-				"/desk/the-frappe-docs/docs-viewer/guide?doc=%2Ftags%2Ftree%3Fscope%3Dguide%26x%3D1",
-			)
+			self.assertEqual(response.status_code, 404)
+			self.assertNotIn("Location", response.headers)
+			frappe.local.request.path = "/docs/guide"
+			response = sources.DocsSourceRenderer("docs").render()
+			self.assertEqual(response.status_code, 404)
+			self.assertNotIn("Location", response.headers)
 			frappe.local.request.path = "/docs/source/wrong_app/guide/tags/tree"
 			self.assertEqual(sources.DocsSourceRenderer("docs").render().status_code, 404)
 
