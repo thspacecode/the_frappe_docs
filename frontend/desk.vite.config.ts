@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { createViteConfig } from "@the-docs/preset-default/vite";
 import { defineConfig, type Plugin, type PluginOption } from "vite";
 import docsConfig from "./docs.config.ts";
+import { sourceComponents } from "./scripts/source-components.ts";
 
 function flattenPlugins(plugins: PluginOption[]): Plugin[] {
   return plugins.flatMap((plugin): Plugin[] =>
@@ -60,6 +61,7 @@ export default defineConfig({
         plugin.name.startsWith("@tailwindcss/") ||
         ["the-docs-content", "@mdx-js/rollup"].includes(plugin.name),
     ),
+    sourceComponents(docsConfig.contentRoot),
     boundary,
   ],
   css: {
