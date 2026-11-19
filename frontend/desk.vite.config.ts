@@ -41,7 +41,18 @@ const boundary: Plugin = {
 };
 
 export default defineConfig({
-  resolve: preset.resolve,
+  resolve: {
+    ...preset.resolve,
+    // Use the pinned upstream runtime until its portal API is published on npm.
+    alias: [
+      {
+        find: /.*\/@the-docs\/plugin-excalidraw\/dist\/runtime\/excalidraw-image\.js$/,
+        replacement: fileURLToPath(new URL("./vendor/the-docs/packages/plugin-excalidraw/src/runtime/excalidraw-image.tsx", import.meta.url)),
+      },
+      ...(Array.isArray(preset.resolve?.alias) ? preset.resolve.alias : []),
+    ],
+    dedupe: ["react", "react-dom"],
+  },
   define: { "process.env.NODE_ENV": JSON.stringify("production") },
   plugins: [
     ...flattenPlugins(preset.plugins ?? []).filter(
