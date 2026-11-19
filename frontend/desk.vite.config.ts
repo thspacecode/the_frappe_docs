@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { createDocsConfig, flattenPlugins } from "./docs-vite-config.ts";
 import { defineConfig, type Plugin } from "vite";
-import { adaptDeskExcalidraw } from "./desk-excalidraw";
 
 const preset = createDocsConfig();
 const bridge = fileURLToPath(
@@ -13,9 +12,6 @@ const boundary: Plugin = {
   name: "desk-docs-boundary",
   enforce: "pre",
   transform(code, id) {
-    if (id.endsWith("/@the-docs/plugin-excalidraw/dist/runtime/excalidraw-image.js")) {
-      return adaptDeskExcalidraw(code, bridge, fileURLToPath(new URL("./app/excalidraw-preview.ts", import.meta.url)));
-    }
     if (!id.includes("/@the-docs/core/dist/components/")) return;
     const portals = [...code.matchAll(/_jsx[s]?\((\w+)\.Portal, \{/g)];
     if (portals.length) {
@@ -45,7 +41,18 @@ const boundary: Plugin = {
 };
 
 export default defineConfig({
-  resolve: preset.resolve,
+  resolve: {
+    ...preset.resolve,
+    // Use the pinned upstream runtime until its portal API is published on npm.
+    alias: [
+      {
+        find: /.*\/@the-docs\/plugin-excalidraw\/dist\/runtime\/excalidraw-image\.js$/,
+        replacement: fileURLToPath(new URL("./vendor/the-docs/packages/plugin-excalidraw/src/runtime/excalidraw-image.tsx", import.meta.url)),
+      },
+      ...(Array.isArray(preset.resolve?.alias) ? preset.resolve.alias : []),
+    ],
+    dedupe: ["react", "react-dom"],
+  },
   define: { "process.env.NODE_ENV": JSON.stringify("production") },
   plugins: [
     ...flattenPlugins(preset.plugins ?? []).filter(
