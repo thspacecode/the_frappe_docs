@@ -2,3 +2,8 @@
 
 /* Include utility classes used by the compiled The Docs packages. */
 @source "../node_modules/@the-docs";
+
+/* Keep the full-screen canvas above Desk's sidebar (z-index 1023). */
+.excalidraw-modal {
+  z-index: 1050;
+}

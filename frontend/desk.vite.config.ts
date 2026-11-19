@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { createDocsConfig, flattenPlugins } from "./docs-vite-config.ts";
 import { defineConfig, type Plugin } from "vite";
+import { adaptDeskExcalidraw } from "./desk-excalidraw";
 
 const preset = createDocsConfig();
 const bridge = fileURLToPath(
@@ -12,6 +13,9 @@ const boundary: Plugin = {
   name: "desk-docs-boundary",
   enforce: "pre",
   transform(code, id) {
+    if (id.endsWith("/@the-docs/plugin-excalidraw/dist/runtime/excalidraw-image.js")) {
+      return adaptDeskExcalidraw(code, bridge, fileURLToPath(new URL("./app/excalidraw-preview.ts", import.meta.url)));
+    }
     if (!id.includes("/@the-docs/core/dist/components/")) return;
     const portals = [...code.matchAll(/_jsx[s]?\((\w+)\.Portal, \{/g)];
     if (portals.length) {
