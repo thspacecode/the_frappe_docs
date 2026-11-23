@@ -1,3 +1,4 @@
+import { ExcalidrawPortalContainer } from "../vendor/the-docs/packages/plugin-excalidraw/src/runtime/excalidraw-image.tsx";
 import { createRoot } from "react-dom/client";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import {
@@ -149,7 +150,9 @@ export function mount(host: HTMLElement, sourceBase: string) {
   headings.observe(content, { childList: true, subtree: true });
   root.render(
     <DeskBoundary.Provider value={shadow}>
-      <RouterProvider router={router} />
+      <ExcalidrawPortalContainer.Provider value={portals}>
+        <RouterProvider router={router} />
+      </ExcalidrawPortalContainer.Provider>
     </DeskBoundary.Provider>,
   );
   return () => {
